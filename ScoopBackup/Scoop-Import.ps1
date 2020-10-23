@@ -31,6 +31,12 @@ function ImportBuckets {
     return $bucketsMapUrl2Name
 }
 
+function ScoopInstall {
+    Write-Verbose "Installing $args"
+    scoop install @args
+    Write-Host ""
+}
+
 function ScoopImportV1([hashtable] $data) {
     $bucketsToImport = @{}
     $data.Buckets.Values | ForEach-Object {
@@ -47,8 +53,20 @@ function ScoopImportV1([hashtable] $data) {
             $apps = $_.Apps
             $apps.Keys | ForEach-Object {
                 if (!$existsApps.ContainsKey($_)) {
-                    Write-Host "importing $bucketName/$_ ($($apps[$_].Arch)) "
-                    scoop install "$bucketName/$_" --arch $apps[$_].Arch
+                    ScoopInstall "$bucketName/$_" --arch $apps[$_].Arch
+                }
+            }
+        }
+    }
+
+    if ($data.NoBucketApps) {
+        $data.NoBucketApps.Keys | ForEach-Object {
+            $appName = $_
+            $app = $data.NoBucketApps[$_]
+
+            if (!$existsApps.ContainsKey($appName)) {
+                if ($app.Url) {
+                    ScoopInstall $app.Url --arch $app.Arch
                 }
             }
         }
