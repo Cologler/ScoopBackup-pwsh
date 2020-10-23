@@ -2,6 +2,7 @@ using namespace System
 using namespace System.Collections.Generic
 
 param(
+    [string] $file,
     [parameter(ValueFromPipeline=$true)][string] $plainText,
     [switch] $global
 )
@@ -130,9 +131,13 @@ function ScoopImportV1([hashtable] $data) {
 }
 
 function ScoopImport {
-    param(
-        [parameter(ValueFromPipeline=$true)][string] $plainText
-    )
+    if ($Script:file) {
+        $plainText = Get-Content -Path $Script:file -Raw
+    } elseif ($Script:plainText) {
+        $plainText = $Script:plainText
+    } else {
+        throw "Nothing to import."
+    }
 
     $data = $plainText | ConvertFrom-Json -AsHashtable
     if ($data.Version -eq 1) {
