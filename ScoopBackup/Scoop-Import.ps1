@@ -2,7 +2,8 @@ using namespace System
 using namespace System.Collections.Generic
 
 param(
-    [parameter(ValueFromPipeline=$true)][string] $plainText
+    [parameter(ValueFromPipeline=$true)][string] $plainText,
+    [switch] $global
 )
 
 . $PSScriptRoot\Lib.ps1
@@ -58,6 +59,15 @@ function ScoopImportV1([hashtable] $data) {
     $bucketsMapUrl2Name = ImportBuckets $bucketsToImport
     $existsApps = Get-UserScopeApps
 
+    function FilterPackageByScope([string]$name, $app) {
+        if ($Script:global -eq ([bool] $app.Global)) {
+            return $true
+        } else {
+            Write-Debug "Ignore package by scope not match: $name"
+            return $false
+        }
+    }
+
     # install high priority apps:
     $mainUrl = 'https://github.com/ScoopInstaller/Main'
     if ($data.Buckets.ContainsKey($mainUrl)) {
@@ -67,10 +77,15 @@ function ScoopImportV1([hashtable] $data) {
             $apps = $mainBucket.Apps
             $apps.Keys |
                 Where-Object { $Script:HighPriorityApps.Contains($_) } |
+                Where-Object { FilterPackageByScope $_ $apps[$_] } |
                 Where-Object { !$existsApps.ContainsKey($_) } |
                 ForEach-Object {
                     $appName = $_
-                    ScoopInstall "$bucketName/$appName" --arch $apps[$_].Arch
+                    if ($apps[$_].Global) {
+                        ScoopInstall "$bucketName/$appName" --arch $apps[$_].Arch --global
+                    } else {
+                        ScoopInstall "$bucketName/$appName" --arch $apps[$_].Arch
+                    }
                     $existsApps[$appName] = @{}
                 }
         }
@@ -82,10 +97,15 @@ function ScoopImportV1([hashtable] $data) {
         if ($_.Apps) {
             $apps = $_.Apps
             $apps.Keys |
+                Where-Object { FilterPackageByScope $_ $apps[$_] } |
                 Where-Object { !$existsApps.ContainsKey($_) } |
                 ForEach-Object {
                     $appName = $_
-                    ScoopInstall "$bucketName/$appName" --arch $apps[$_].Arch
+                    if ($apps[$_].Global) {
+                        ScoopInstall "$bucketName/$appName" --arch $apps[$_].Arch --global
+                    } else {
+                        ScoopInstall "$bucketName/$appName" --arch $apps[$_].Arch
+                    }
                     $existsApps[$appName] = @{}
                 }
         }
@@ -93,12 +113,17 @@ function ScoopImportV1([hashtable] $data) {
 
     if ($data.NoBucketApps) {
         $data.NoBucketApps.Keys |
+            Where-Object { FilterPackageByScope $_ $data.NoBucketApps[$_] } |
             Where-Object { !$existsApps.ContainsKey($_) } |
             ForEach-Object {
                 $appName = $_
                 $app = $data.NoBucketApps[$_]
                 if ($app.Url) {
-                    ScoopInstall $app.Url --arch $app.Arch
+                    if ($apps[$_].Global) {
+                        ScoopInstall $app.Url --arch $apps[$_].Arch --global
+                    } else {
+                        ScoopInstall $app.Url --arch $apps[$_].Arch
+                    }
                 }
             }
     }
