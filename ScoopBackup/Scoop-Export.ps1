@@ -1,11 +1,20 @@
+param(
+    [switch] $global
+)
+
 . $PSScriptRoot\Lib.ps1
 
 function ScoopExport {
     $buckets = Get-Buckets
-    $apps = Get-UserScopeApps
     $noBucketApps = @{}
 
-    $apps.Values | ForEach-Object {
+    if ($Script:global) {
+        $apps = $(Get-GlobalScopeApps).Values + $(Get-UserScopeApps).Values
+    } else {
+        $apps = $(Get-UserScopeApps).Values
+    }
+
+    $apps | ForEach-Object {
         $app = $_
         if ($app.Bucket) {
             if ($buckets.ContainsKey($app.Bucket)) {
@@ -14,16 +23,25 @@ function ScoopExport {
                 if (!$bucket.ContainsKey("Apps")) {
                     $bucket["Apps"] = @{}
                 }
-                $bucket.Apps[$app.Name] = @{
-                    #Version = $app.Version # scoop did not support select version
+                $entry = @{
                     Arch = $app.Arch
                 }
+                if ($app.Global) {
+                    $entry.Global = $true
+                }
+                # local package should override global package:
+                $bucket.Apps[$app.Name] = $entry
             }
         } elseif ($app.Url) {
-            $noBucketApps[$app.Name] = @{
+            $entry = @{
                 Url = $app.Url
                 Arch = $app.Arch
             }
+            if ($app.Global) {
+                $entry.Global = $true
+            }
+            # local package should override global package:
+            $noBucketApps[$app.Name] = $entry
         }
     }
 
