@@ -1,8 +1,20 @@
+using namespace System
+using namespace System.Collections.Generic
+
 param(
     [parameter(ValueFromPipeline=$true)][string] $plainText
 )
 
 . $PSScriptRoot\Lib.ps1
+
+$Script:HighPriorityApps = [HashSet[string]]::new([string[]] @(
+    'git'
+    '7zip'
+    'sudo'
+    'innounp'
+    'dark'
+    'lessmsi'
+), [System.StringComparer]::OrdinalIgnoreCase)
 
 function ImportBuckets {
     param (
@@ -46,30 +58,49 @@ function ScoopImportV1([hashtable] $data) {
     $bucketsMapUrl2Name = ImportBuckets $bucketsToImport
     $existsApps = Get-UserScopeApps
 
+    # install high priority apps:
+    $mainUrl = 'https://github.com/ScoopInstaller/Main'
+    if ($data.Buckets.ContainsKey($mainUrl)) {
+        $mainBucket = $data.Buckets[$mainUrl]
+        $bucketName = $bucketsMapUrl2Name[$mainUrl]
+        if ($mainBucket.Apps) {
+            $apps = $mainBucket.Apps
+            $apps.Keys |
+                Where-Object { $Script:HighPriorityApps.Contains($_) } |
+                Where-Object { !$existsApps.ContainsKey($_) } |
+                ForEach-Object {
+                    $appName = $_
+                    ScoopInstall "$bucketName/$appName" --arch $apps[$_].Arch
+                    $existsApps[$appName] = @{}
+                }
+        }
+    }
+
     $data.Buckets.Values | ForEach-Object {
         $bucketName = $bucketsMapUrl2Name[$_.RemoteUrl]
 
         if ($_.Apps) {
             $apps = $_.Apps
-            $apps.Keys | ForEach-Object {
-                if (!$existsApps.ContainsKey($_)) {
-                    ScoopInstall "$bucketName/$_" --arch $apps[$_].Arch
+            $apps.Keys |
+                Where-Object { !$existsApps.ContainsKey($_) } |
+                ForEach-Object {
+                    $appName = $_
+                    ScoopInstall "$bucketName/$appName" --arch $apps[$_].Arch
+                    $existsApps[$appName] = @{}
                 }
-            }
         }
     }
 
     if ($data.NoBucketApps) {
-        $data.NoBucketApps.Keys | ForEach-Object {
-            $appName = $_
-            $app = $data.NoBucketApps[$_]
-
-            if (!$existsApps.ContainsKey($appName)) {
+        $data.NoBucketApps.Keys |
+            Where-Object { !$existsApps.ContainsKey($_) } |
+            ForEach-Object {
+                $appName = $_
+                $app = $data.NoBucketApps[$_]
                 if ($app.Url) {
                     ScoopInstall $app.Url --arch $app.Arch
                 }
             }
-        }
     }
 }
 
