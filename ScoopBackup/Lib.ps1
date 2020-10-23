@@ -24,6 +24,7 @@ function Get-Apps([string] $appsDir) {
                 Name = $_.name
                 Bucket = $install.bucket
                 Arch = $install.architecture
+                Url = $install.url
             }
         }
     }
@@ -31,11 +32,22 @@ function Get-Apps([string] $appsDir) {
 }
 
 function Get-UserScopeApps {
-    return Get-Apps '~\scoop\apps\'
+    if ($env:SCOOP -and (Test-Path $env:SCOOP)) {
+        $appsDir = $env:SCOOP
+    } else {
+        $appsDir = '~\scoop\apps\'
+    }
+    return Get-Apps $appsDir
 }
 
 function Get-GlobalScopeApps {
-    $d = Get-Apps "$env:ProgramData\scoop\apps\"
+    if ($env:SCOOP_GLOBAL -and (Test-Path $env:SCOOP_GLOBAL)) {
+        $appsDir = $env:SCOOP_GLOBAL
+    } else {
+        $appsDir = "$env:ProgramData\scoop\apps\"
+    }
+
+    $d = Get-Apps $appsDir
     $d.Values | ForEach-Object {
         $_['Global'] = $true
     }
