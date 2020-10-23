@@ -4,6 +4,13 @@ Scoop backup scripts.
 
 **Note: Powershell Core is required.**
 
+## Install
+
+``` pwsh
+scoop bucket add cologler https://github.com/Cologler/cologler-scoop-bucket
+scoop install scoop-backup
+```
+
 ## How To Use
 
 ``` pwsh
