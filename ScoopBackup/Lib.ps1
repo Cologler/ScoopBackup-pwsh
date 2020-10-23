@@ -13,9 +13,9 @@ function Get-Buckets {
     return $buckets
 }
 
-function Get-Apps {
+function Get-Apps([string] $appsDir) {
     $apps = @{}
-    Get-ChildItem '~\scoop\apps\' | ForEach-Object {
+    Get-ChildItem $appsDir | ForEach-Object {
         $current = "$_\current"
         $installPath = "$current\install.json"
         if (Test-Path $installPath) {
@@ -28,4 +28,16 @@ function Get-Apps {
         }
     }
     return $apps
+}
+
+function Get-UserScopeApps {
+    return Get-Apps '~\scoop\apps\'
+}
+
+function Get-GlobalScopeApps {
+    $d = Get-Apps "$env:ProgramData\scoop\apps\"
+    $d.Values | ForEach-Object {
+        $_['Global'] = $true
+    }
+    return $d
 }

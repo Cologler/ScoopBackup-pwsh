@@ -2,7 +2,7 @@
 
 function ScoopExport {
     $buckets = Get-Buckets
-    $apps = Get-Apps
+    $apps = Get-UserScopeApps
 
     $apps.Values | ForEach-Object {
         $app = $_

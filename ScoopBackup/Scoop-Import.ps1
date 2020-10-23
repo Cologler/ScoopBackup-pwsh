@@ -38,7 +38,7 @@ function ScoopImportV1([hashtable] $data) {
     }
 
     $bucketsMapUrl2Name = ImportBuckets $bucketsToImport
-    $existsApps = Get-Apps
+    $existsApps = Get-UserScopeApps
 
     $data.Buckets.Values | ForEach-Object {
         $bucketName = $bucketsMapUrl2Name[$_.RemoteUrl]
