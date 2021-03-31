@@ -13,7 +13,7 @@ function ScoopExport {
     } else {
         $apps = $(Get-UserScopeApps).Values
     }
-
+    
     $apps | ForEach-Object {
         $app = $_
         if ($app.Bucket) {
