@@ -17,7 +17,7 @@ function Get-Buckets {
 function Get-Apps([string] $appsDir) {
     $apps = @{}
     Get-ChildItem $appsDir | ForEach-Object {
-        $current = "$($_.FullName)\current"
+        $current = "$_\current"
         $installPath = "$current\install.json"
         if (Test-Path $installPath) {
             $install = Get-Content -Raw $installPath | ConvertFrom-Json -AsHashTable
