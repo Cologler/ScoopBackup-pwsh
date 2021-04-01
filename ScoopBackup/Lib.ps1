@@ -1,6 +1,7 @@
 function Get-Buckets {
     $buckets = @{}
-    Get-ChildItem '~\scoop\buckets\' | ForEach-Object {
+
+    Get-ChildItem "$(Get-UserScoopDir)\buckets\" | ForEach-Object {
         $job = Start-Job -WorkingDirectory $_.FullName -ScriptBlock {
             git remote get-url origin
         }
@@ -31,18 +32,22 @@ function Get-Apps([string] $appsDir) {
     return $apps
 }
 
-function Get-UserScopeApps {
+function Get-UserScoopDir {
+    $baseDir = '~\scoop'
+
     if ($env:SCOOP -and (Test-Path $env:SCOOP)) {
-        $appsDir = $env:SCOOP
-    } else {
-        $appsDir = '~\scoop\apps\'
+        $baseDir = "$env:SCOOP"
     }
-    return Get-Apps $appsDir
+
+    return $baseDir
+}
+function Get-UserScopeApps {
+    return Get-Apps "$(Get-UserScoopDir)\apps\"
 }
 
 function Get-GlobalScopeApps {
     if ($env:SCOOP_GLOBAL -and (Test-Path $env:SCOOP_GLOBAL)) {
-        $appsDir = $env:SCOOP_GLOBAL
+        $appsDir = "$env:SCOOP_GLOBAL\apps"
     } else {
         $appsDir = "$env:ProgramData\scoop\apps\"
     }
